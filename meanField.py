@@ -71,10 +71,36 @@ gen_image(noiseX[0])
 # Build some Bolts and Machines, I mean a Boltzman Machine
 thetaH = 0.8
 thetaX = 2.0
+iterations = 10
+E = 10e-10
 
 Q = np.genfromtxt('SupplementaryAndSampleData/InitialParametersModel.csv', delimiter=',')
 updateOrder = np.genfromtxt('SupplementaryAndSampleData/UpdateOrderCoordinates.csv', delimiter=',',
                       skip_header=1, usecols=range(1, 785))
 
 
+# General Steps To Perform
+# https://piazza.com/class/jchzguhsowz6n9?cid=1295
+# 1. load initial parms for q (Q)
+# 2. Calculate Pi using Qrc[H=1]*** Follow order provided
+# 3. Performs 10 Iters
+# 4. Traverse through Pi, if P_ij > 0.5 then 1 else 0. This is the new image
+#
 
+# Start with 10 Images for testing, to match the provided sample
+X = noiseX[0:10]
+updateOrderTmp = updateOrder[0:20]
+
+# Copy Q for each image, so all images start with the same Q values
+q = np.zeros((10,28,28))
+for i in range(10):
+    q[i] = Q
+
+
+# EQ = SUM( Qrc[Hrc = 1] log( Qrc[Hr,c = 1] + E) + Qr,c[Hrc = 1] log(Qrc[Hrc = -1] + E  )
+
+# https://piazza.com/class/jchzguhsowz6n9?cid=1341
+# def update_Q(Q,i,j):
+#     above = (np.e)**(sum(phetaHH*EqH(Q,i_,j_) for i_,j_ in neighbor(i,j))+phetaHX*X[i,j])
+#     below = above+(np.e)**(-np.log(above))
+#     Q[i,j] = above/below
