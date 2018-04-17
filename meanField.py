@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import mnist
 import scipy.misc
+import copy as copy
 
 
 # Function to display image
@@ -37,6 +38,43 @@ def noise_img(data, noiseData):
 
             # Skip a row
             i = i + 2
+
+
+# Returns list with the neighbors from provided coords
+def neighbors(xCoord, yCoord):
+
+    neighbors = []
+    tmpx = 0
+    tmpy = 0
+
+    # If statements to ensure we are not in a edge
+
+    # Start W/ west coord first
+    if xCoord != 0:
+        tmpx = xCoord -1
+        tmpy = yCoord
+        neighbors.append([tmpx, tmpy])
+
+    # North Coord Next
+    if yCoord != 0:
+        tmpx = xCoord
+        tmpy = yCoord -1
+        neighbors.append([tmpx, tmpy])
+
+    # East Coord
+    if xCoord < 28:
+        tmpx = xCoord + 1
+        tmpy = yCoord
+        neighbors.append([tmpx, tmpy])
+
+    # South Coord
+    if xCoord < 28:
+        tmpx = xCoord
+        tmpy = yCoord + 1
+        neighbors.append([tmpx, tmpy])
+
+    return neighbors
+
 
 
 # # PART 1
@@ -97,10 +135,50 @@ for i in range(10):
     q[i] = Q
 
 
+# Calculate the Pi values
+
 # EQ = SUM( Qrc[Hrc = 1] log( Qrc[Hr,c = 1] + E) + Qr,c[Hrc = 1] log(Qrc[Hrc = -1] + E  )
 
 # https://piazza.com/class/jchzguhsowz6n9?cid=1341
 # def update_Q(Q,i,j):
-#     above = (np.e)**(sum(phetaHH*EqH(Q,i_,j_) for i_,j_ in neighbor(i,j))+phetaHX*X[i,j])
+#    above = (np.e)**(sum(phetaHH*EqH(Q,i_,j_) for i_,j_ in neighbor(i,j))+phetaHX*X[i,j])
 #     below = above+(np.e)**(-np.log(above))
 #     Q[i,j] = above/below
+
+i = 26
+j = 4
+Qi = 0
+
+t1 = 0
+
+qeh = copy.deepcopy(Q)
+
+# First term of numerator
+#  SumOverNeighbors ThetaH * (2Pi_ij - 1)
+for i_, j_ in neighbors(i, j):
+    print(str(i_) + " " + str(j_))
+    t1 = t1 + (thetaH *((2 * qeh[i_, j_]) - 1))
+
+# Second term of numerator
+# Summation of Neighbors in X  ThethaX * Xj
+t2 = thetaX*X[0, i, j]
+
+# Numerator e ^ (term1 + term2)
+Numerator = np.e ** (t1 + t2)
+
+# Denominator T1 = Numerator
+# Denominator T2 part 1
+# SumOverNeighbors -ThetaH * (2Pi_ij - 1)
+t1 = 0
+for i_, j_ in neighbors(i, j):
+    print(str(i_) + " " + str(j_))
+    t1 = t1 + ((-1*thetaH) *((2 * qeh[i_, j_]) - 1))
+
+# Denominator T2 part 2
+# Summation of Neighbors in X  -ThethaX * Xj
+t2 = (-1*thetaX)*X[0, i, j]
+
+#Denominator = numerator + e^(t1 + t2)
+denominator = Numerator + np.e ** (t1 + t2)
+
+updatedPi = Numerator / denominator
