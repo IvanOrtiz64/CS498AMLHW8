@@ -62,13 +62,13 @@ def neighbors(xCoord, yCoord):
         neighbors.append([tmpx, tmpy])
 
     # East Coord
-    if xCoord < 28:
+    if xCoord < 27:
         tmpx = xCoord + 1
         tmpy = yCoord
         neighbors.append([tmpx, tmpy])
 
     # South Coord
-    if xCoord < 28:
+    if yCoord < 27:
         tmpx = xCoord
         tmpy = yCoord + 1
         neighbors.append([tmpx, tmpy])
@@ -88,6 +88,7 @@ def calc_logP_term1(Qk, i, j, thetaH):
     return p1
 
 
+
 # calculates term2 of the Eq[logP[H,X]] calculation
 # Summation in Neighbors of ij in X  Theta * Eqi[Hi]Xj
 def calc_logP_term2(Qk, i, j, thetaX, Xi):
@@ -101,28 +102,27 @@ def calc_logP_term2(Qk, i, j, thetaX, Xi):
 def update_EQ(H, thetaH, thetaX, x):
 
     E = 10e-10  # Tiny Error
-    newEQ = np.zeros((20, 1))
+    newEQ = np.zeros((H.shape[0], 1))
+
+    p = np.zeros((H.shape[0], 1))
+    q = np.zeros((H.shape[0], 1))
 
     # Iterate through each image in hidden matrix
     for img in range(H.shape[0]):
-
-        p = 0
-        q = 0
-        eq = 0
 
         # Iterate through rows & cols
         for row in range(H.shape[1]):
             for col in range(H.shape[2]):
 
                 # Eq[Log[H,X]
-                p += calc_logP_term1(H[img], row, col, thetaH) + calc_logP_term2(H[img], row, col, thetaH, x[img])
+                p[img] += calc_logP_term1(H[img], row, col, thetaH) + calc_logP_term2(H[img], row, col, thetaX, x[img])
 
                 # Eq[logQ]
                 # Q[H=1] * Log(Q[H=1] + E) + Q[H=-1] * log(Q[H=-1] + E
-                q += H[img, row, col] * np.log((H[img, row, col] + E)) + \
+                q[img] += H[img, row, col] * np.log((H[img, row, col] + E)) + \
                      (1 - H[img, row, col]) * np.log(((1 - H[img, row, col]) + E))
 
-        return p - q
+    return p - q
 
 
 
@@ -185,6 +185,7 @@ for i in range(10):
 # List to store the energy after each iteration
 energyList = []
 for iters in range(iterations):
+    print("Iter " + str(iters) )
 
     # Store Energy for each iteration
     energyList.append(update_EQ(EQ, thetaH, thetaX, tmpX))
@@ -195,16 +196,16 @@ for iters in range(iterations):
         for j in range(updateOrderTmp.shape[1]):
 
             # Index and image number
-            rowIdx = updateOrderTmp[i, j]
-            colIdx = updateOrderTmp[i+1, j]
-            imageNum = i/2
+            rowIdx = int(updateOrderTmp[i, j])
+            colIdx = int(updateOrderTmp[i+1, j])
+            imageNum = int(i/2)
 
             # Update Pi
             t1 = 0
             t2 = 0
 
             # Get neighbors and iterate
-            for i_, j_ in neighbors(i, j):
+            for i_, j_ in neighbors(rowIdx, colIdx):
                 #  ThetaH * (2Pi_ij - 1)  -  First term in the numerator
                 t1 += thetaH * ((2 * EQ[imageNum, i_, j_]) - 1)
 
@@ -213,16 +214,17 @@ for iters in range(iterations):
 
 
             # Numerator e ^ (term1 + thetaX * X)
-            numerator = np.e ** (t1 + (thetaX * tmpX[imageNum, i, j]))
+            numerator = np.e ** (t1 + (thetaX * tmpX[imageNum, rowIdx, colIdx]))
 
             # Denominator = numerator + e^(t1 + (-thetaX * X )
-            denominator = numerator + np.e ** (t2 + (-1*thetaX)* tmpX[imageNum, i, j] )
+            denominator = numerator + np.e ** (t2 + (-1*thetaX) * tmpX[imageNum, rowIdx, colIdx] )
 
             # Update Pi
-            EQ[imageNum, i, j] = numerator / denominator
+            EQ[imageNum, rowIdx, colIdx] = numerator / denominator
 
-    print('Iteration: ' + str(iters))
 
 # Store final update
-energyList.append(update_EQ(EQ, thetaH, thetaX, tmpX))
+# energyList.append(update_EQ(EQ, thetaH, thetaX, tmpX))
 
+# Temp Convert into Dataframe to view and compare with sample
+tp = pd.DataFrame(np.array(energyList).reshape(11 , 10)).T
