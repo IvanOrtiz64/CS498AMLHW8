@@ -9,7 +9,7 @@ import copy as copy
 # Function to display image
 # https://stackoverflow.com/questions/42353676/display-mnist-image-using-matplotlib
 def gen_image(arr):
-    two_d = (np.reshape(arr, (28, 28)) * 255).astype(np.uint8)
+    two_d = (np.reshape(arr, (arr.shape[0], arr.shape[1])) * 255).astype(np.uint8)
     plt.imshow(two_d, interpolation='nearest')
     plt.show()
 
@@ -102,8 +102,6 @@ def calc_logP_term2(Qk, i, j, thetaX, Xi):
 def update_EQ(H, thetaH, thetaX, x):
 
     E = 10e-10  # Tiny Error
-    newEQ = np.zeros((H.shape[0], 1))
-
     p = np.zeros((H.shape[0], 1))
     q = np.zeros((H.shape[0], 1))
 
@@ -125,15 +123,12 @@ def update_EQ(H, thetaH, thetaX, x):
     return p - q
 
 
-
 # # PART 1
 # Read MNIST train images using the mnist library
 images = mnist.train_images()
-train_labels = mnist.train_labels()
 
 # Get first 20 images
 X = images[0:20]
-Y = train_labels[0:20]
 gen_image(X[0])
 
 
@@ -172,32 +167,28 @@ updateOrder = np.genfromtxt('SupplementaryAndSampleData/UpdateOrderCoordinates.c
                       skip_header=1, usecols=range(1, 785))
 
 
-# Start with 10 Images for testing, to match the provided sample
-tmpX = noiseX[0:10]
-updateOrderTmp = updateOrder[0:20]
-
 # Copy Q for each image, so all images start with the same Q values
-EQ = np.zeros((10, 28, 28))
-for i in range(10):
+EQ = np.zeros((20, 28, 28))
+for i in range(20):
     EQ[i] = Q
 
 
 # List to store the energy after each iteration
 energyList = []
 for iters in range(iterations):
-    print("Iter " + str(iters) )
+    print("Iter " + str(iters))
 
     # Store Energy for each iteration
-    energyList.append(update_EQ(EQ, thetaH, thetaX, tmpX))
+    energyList.append(update_EQ(EQ, thetaH, thetaX, noiseX))
 
     # Update Pi in order
     # Iterate through rows, skipping the second
-    for i in range(0, updateOrderTmp.shape[0], 2):
-        for j in range(updateOrderTmp.shape[1]):
+    for i in range(0, updateOrder.shape[0], 2):
+        for j in range(updateOrder.shape[1]):
 
             # Index and image number
-            rowIdx = int(updateOrderTmp[i, j])
-            colIdx = int(updateOrderTmp[i+1, j])
+            rowIdx = int(updateOrder[i, j])
+            colIdx = int(updateOrder[i+1, j])
             imageNum = int(i/2)
 
             # Update Pi
@@ -212,19 +203,51 @@ for iters in range(iterations):
                 # -ThetaH * (2Pi_ij - 1)  - First part of the second term in denominator
                 t2 += ((-1 * thetaH) * ((2 * EQ[imageNum, i_, j_]) - 1))
 
-
             # Numerator e ^ (term1 + thetaX * X)
-            numerator = np.e ** (t1 + (thetaX * tmpX[imageNum, rowIdx, colIdx]))
+            numerator = np.e ** (t1 + (thetaX * noiseX[imageNum, rowIdx, colIdx]))
 
             # Denominator = numerator + e^(t1 + (-thetaX * X )
-            denominator = numerator + np.e ** (t2 + (-1*thetaX) * tmpX[imageNum, rowIdx, colIdx] )
+            denominator = numerator + np.e ** (t2 + (-1*thetaX) * noiseX[imageNum, rowIdx, colIdx] )
 
             # Update Pi
             EQ[imageNum, rowIdx, colIdx] = numerator / denominator
 
 
-# Store final update
-# energyList.append(update_EQ(EQ, thetaH, thetaX, tmpX))
+# Transform energy and write to csv
+energy = np.array(energyList).reshape(20, 10).T
+np.savetxt("energyResult.csv", energy, delimiter=',')
 
-# Temp Convert into Dataframe to view and compare with sample
-tp = pd.DataFrame(np.array(energyList).reshape(11 , 10)).T
+# Array to hold reconstructed images by col
+hidden_img = np.zeros((EQ.shape[1], EQ.shape[0] * EQ.shape[2]))
+
+# Reshape Images into cols
+for img in range(EQ.shape[0]):
+    startInd = img * 28
+    endInd = startInd + 28
+    hidden_img[:, startInd:endInd] = EQ[img]
+
+# Display Hidden Images
+gen_image(hidden_img)
+
+# MAP Images by converting hidden pixels 0 if EQij < 0.5 or 1 if EQij >= 0.5
+map_img = copy.deepcopy(hidden_img)
+for i in range(map_img.shape[0]):
+    for j in range(map_img.shape[1]):
+            if map_img[i][j] >= 0.5:
+                map_img[i][j] = 1
+            else:
+                map_img[i][j] = 0
+
+# Display MAP Images and save into csv
+gen_image(map_img)
+np.savetxt("MAPImages.csv", map_img, delimiter=',')
+
+
+
+
+
+
+
+
+
+
