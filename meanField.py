@@ -1,8 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
-import pandas as pd
 import mnist
-import scipy.misc
 import copy as copy
 
 
@@ -120,7 +118,7 @@ def update_EQ(H, thetaH, thetaX, x):
                 q[img] += H[img, row, col] * np.log((H[img, row, col] + E)) + \
                      (1 - H[img, row, col]) * np.log(((1 - H[img, row, col]) + E))
 
-    return p - q
+    return q - p
 
 
 # # PART 1
@@ -130,7 +128,6 @@ images = mnist.train_images()
 # Get first 20 images
 X = images[0:20]
 gen_image(X[0])
-
 
 # Binarize images
 # Divide by 255, then round using rint. Values < 0.5 = 0  and  >= 0.5 = 1
@@ -173,6 +170,11 @@ for i in range(20):
     EQ[i] = Q
 
 
+# Adjust for 10 images
+EQ = EQ[0:10]
+noiseX = noiseX[10:20]
+updateOrder = updateOrder[20:40, :]
+
 # List to store the energy after each iteration
 energyList = []
 for iters in range(iterations):
@@ -214,7 +216,7 @@ for iters in range(iterations):
 
 
 # Transform energy and write to csv
-energy = np.array(energyList).reshape(20, 10).T
+energy = np.array(energyList).reshape(10, energyList[0].shape[0]).T
 np.savetxt("energyResult.csv", energy, delimiter=',')
 
 # Array to hold reconstructed images by col
@@ -240,7 +242,20 @@ for i in range(map_img.shape[0]):
 
 # Display MAP Images and save into csv
 gen_image(map_img)
-np.savetxt("MAPImages.csv", map_img, delimiter=',')
+np.savetxt("denoised.csv", map_img, fmt='%d', delimiter=',')
+
+
+# Save energy.csv for only first two images for the first iteration
+# For autograder submission
+eng = energy[0:2, 0:2]
+np.savetxt("energy.csv", eng, delimiter=',')
+
+
+
+
+
+
+
 
 
 

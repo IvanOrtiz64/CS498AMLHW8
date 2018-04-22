@@ -1,0 +1,24 @@
+Names: 
+Ivan Mora-Ortiz (ivanm2)
+Matthew McKeithen (mm35)
+Atul Sharma (atul2)
+Course: CS 498-AML MCS-DS
+Assignment8
+
+
+CITATIONS:
+
+Python Libraries Used:
+- Numpy, for array manipulations
+- Matplotlib, for plotting images 
+- Mnist, this library was used to retrieve the MNIST images, as suggested in the assignment instructions
+- Copy, this library was used to create new objects of the parameter matrix at the different stages
+
+
+Code Citations:
+
+wheresmypdp10 – Used his code at the below link for displaying the MNIST images
+https://stackoverflow.com/questions/42353676/display-mnist-image-using-matplotlib
+
+
+
